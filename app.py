@@ -84,6 +84,12 @@ dftax1 = dftax[dftax['name'] == 'total']
 dfzigyodata = pd.read_csv('./data/zigyo_data_spread.csv', index_col=0)
 df1zigyodata = dfzigyodata[dfzigyodata['area'] != '総数']
 
+# 高齢化データ
+dfelder = pd.read_csv('./data/areage.csv', index_col=0)
+dfelder1 = dfelder[['area', '65-(%)','year']]
+dfspread = pd.read_csv('./data/age-spread.csv', index_col=0)
+dfellabor = pd.read_csv('./data/agepoplabor.csv', index_col=0)
+
 # TAB CSS AREA
 
 tabs_styles = {
@@ -124,22 +130,35 @@ app.layout = html.Div([
                         ),
                         html.Div(style = {'backgroundColor': titlecolor,'height': '20px'}),
                         html.Div([
-                        html.H1('大阪市の交通手段の変化を見る'),
+                        html.H1('大阪市の交通手段、人口動向の変化を見る'),
                         ],
                         style={'backgroundColor': titlecolor,'textAlign': 'center'}),
                         html.Div([
-                            html.H4('概要'),
-                            html.H5('・大阪市の交通手段の変化を見るアプリです。'),
+                            html.Div([
+                            html.H4('概要'),], style={'backgroundColor': titlecolor}),
+                            html.H5('・大阪市の交通手段、人口動向の変化を見るアプリです。'),
                             html.H5('・画面上にあるタブをクリックするとそのページに移ります。'),
+                            html.H5('・チャート横の凡例をクリックするとその要素が消えます。もう一度クリックすると再び現れます。'),
+                            html.H5('・データからみると、自動車台数の原因は、人々の移動手段の変化を表しているわけではなさそうです。'),
+                            html.H5('・その要因を探るため、人口動向、雇用動向などを探りました。'),
+                            html.H5('・データを沢山入れる事により、見る人々が自分で現状を考えられるアプリを目指しました。'),
                             ], style = {'marginBottom': '2%', 'textAlign': 'left', 'marginLeft': '10%'}),
                         html.Div([
-                            html.H4('ページ概要'),
+                            html.Div([
+                            html.H4('ページ概要'),], style={'backgroundColor': titlecolor}),
                             html.H5('・交通手段の変化概要: 大阪市の自動車台数、地下鉄、バスの利用概況を確認します。'),
                             html.H5('・大阪市の人口変動: 大阪市全体の人口、区別の人口を調査します。'),
                             html.H5('・自動車データ: 大阪市の自動車データの詳細を見ます。渋滞データも掲載しました。'),
                             html.H5('・区別自動車台数 / インタラクティブ: 区別の車種データがインタラクティブに見られます。'),
                             html.H5('・人口と収入と自動車台数: 区別の3つの指標の関連を見ました。収入は個人市民税を利用しました。'),
                             html.H5('・公共交通機関データ: 地下鉄、ニュートラム、市バス、私鉄、JRの利用状況を見ました。'),
+                            html.H5('・民間事業所・雇用: 区別の事業所、従業員数の増減をインタラクティブに見れるチャートを作成しました。'),
+                            html.H5('・高齢化: 区別の高齢化割合の変化、高齢化と人口減少、雇用の関係を調べました。'),
+                        ], style = {'textAlign': 'left', 'marginLeft': '10%'}),
+                        html.Div([
+                            html.Div([
+                            html.H4('利用データ'),], style={'backgroundColor': titlecolor}),
+                            html.H5('・利用データに関してはgithubを参照ください。'),
                         ], style = {'textAlign': 'left', 'marginLeft': '10%'}),
                         ], style={'textAlign': 'center'}),
                         html.Div([
@@ -697,7 +716,7 @@ app.layout = html.Div([
                         ], style = {'width': '32%', 'display': 'inline-block', 'flaot': 'right'})
                     ])
                     ]),
-                    dcc.Tab(label='民間事業所', style=tab_style, selected_style=tab_selected_style,
+                    dcc.Tab(label='民間事業所・雇用', style=tab_style, selected_style=tab_selected_style,
                         children = [
                         html.Div([
                             html.Div(
@@ -731,7 +750,132 @@ app.layout = html.Div([
                             html.Div([
                             dcc.Graph(id = 'tells_about_labor')
                                 ], style= {'marginLeft': '2%', 'marginRight': '2%'})
-                            ])
+                            ]),
+                dcc.Tab(label='高齢化', style=tab_style, selected_style=tab_selected_style,
+                    children =[
+                        html.Div([
+                        html.Div(
+                            style = {'height': '40px','width': 'auto', 'backgroundImage': 'url(https://cdn-ak.f.st-hatena.com/images/fotolife/m/mazarimono/20190123/20190123093340.png)'}
+                            ),
+                            html.Div([], style={'height': '20px', 'backgroundColor': titlecolor}),
+                            html.H1('高齢化'),
+                            html.P('・雇用の減少、人口減少などは高齢化が影響しているのか見てみた。'),
+                            html.P('・多くの地域で事業所、雇用ともに減少している。')
+                        ], style={'textAlign': 'center', 'backgroundColor': titlecolor}),
+                        html.Div([
+                            html.H3('各区の人口に占める65歳以上の年齢の割合'),
+                            html.P('・大阪市は14％＝＞25％。ちなみに全国平均は27.7％（2017年）。')
+                        ], style={'textAlign': 'center', 'backgroundColor': titlecolor}),
+                        html.Div([
+                            dcc.Graph(
+                                id = 'elder-ratio-chart',
+                                figure = {
+                                    'data': [
+                                        go.Scatter(
+                                            x = dfelder1[dfelder1['area']==i]['year'],
+                                            y = dfelder1[dfelder1['area']==i]['65-(%)'],
+                                            name = i,
+                                            mode = 'lines+markers',
+                                        ) for i in dfelder1['area'].unique()
+                                    ],
+                                    'layout':
+                                        go.Layout(
+                                            height = 500,
+                                            xaxis = {'title': '65歳以上の割合（％）'},
+                                            yaxis = {'title': '年度'}
+                                        )
+                                }
+                            )
+                        ], style = {'marginLeft': '10%', 'marginRight': '10%'}),
+                        html.Div([
+                            html.H3('人口の増減と高齢化の関係を見る')
+                        ], style={'textAlign': 'center', 'backgroundColor': titlecolor}),
+                        html.Div([
+                            dcc.Graph(
+                                id = 'ratio-corr',
+                                figure ={
+                                    'data':[
+                                        go.Scatter(
+                                            x = dfspread[dfspread['area'] == i]['人口増加率'],
+                                            y = dfspread[dfspread['area'] == i]['高齢者割合増加率'],
+                                            name = i,
+                                            mode = 'markers',
+                                            marker ={
+                                                'size': 15,
+                                                'opacity': 0.5
+                                            }
+                                        ) for i in dfspread['area'].unique()
+                                    ],
+                                    'layout':
+                                        go.Layout(
+                                            height = 500,
+                                            title = '人口と高齢者割合の変化（1995=>2015）',
+                                            xaxis = {'title' : '人口の増加率(%)'},
+                                            yaxis = {'title' : '高齢者割合増加率(%)'}
+                                        )
+                                }
+                            )
+                        ], style = {'marginLeft': '10%', 'marginRight': '10%'}),
+                        html.Div([
+                            html.H3('区別の雇用者数と高齢化の関係')
+                        ], style={'textAlign': 'center', 'backgroundColor': titlecolor}),
+                        html.Div([
+                            dcc.Graph(
+                                id = 'labor-and-elder',
+                                figure = {
+                                    'data' : [
+                                        go.Scatter(
+                                            x = dfellabor[dfellabor['area'] == i]['高齢者割合増加率'],
+                                            y = dfellabor[dfellabor['area'] == i]['従業員増減率'],
+                                            name = i,
+                                            mode = 'markers',
+                                            marker = {
+                                                'size': 15,
+                                                'opacity': 0.5
+                                            }
+                                        ) for i in dfellabor['area'].unique()
+                                    ],
+                                    'layout':
+                                    go.Layout(
+                                        height = 500,
+                                        title = '高齢者割合増加率と従業員数の増加率（高齢者割合増加率は1995＝＞2015、従業員増加率は2009＝＞2015）',
+                                        xaxis = {'title': '高齢者割合増加率（％）'},
+                                        yaxis = {'title': '従業員増減率（％）'}
+                                    )
+                                }
+                            )
+                        ], style = {'marginLeft': '10%', 'marginRight': '10%'}),
+                        html.Div([
+                            html.H3('区別の人口増加率と雇用者増加率の関係')
+                        ], style={'textAlign': 'center', 'backgroundColor': titlecolor}),
+                        html.Div([
+                            dcc.Graph(
+                                id = 'labor-and-pop',
+                                figure = {
+                                    'data':[
+                                        go.Scatter(
+                                            x = dfellabor[dfellabor['area'] == i]['人口増加率'],
+                                            y = dfellabor[dfellabor['area'] == i]['従業員増減率'],
+                                            name = i,
+                                            mode = 'markers',
+                                            marker = {
+                                                'size': 15,
+                                                'opacity': 0.5
+                                            }
+                                        ) for i in dfellabor['area'].unique()
+                                    ],
+                                    'layout':
+                                        go.Layout(
+                                            height= 500,
+                                            title = '人口増加率と雇用者増加率の関係（人口：1995=>2015, 雇用: 2009=>2015)',
+                                            xaxis = {'title': '人口増加率（％）'},
+                                            yaxis = {'title': '雇用者数増加率（％）'}
+                                        )
+                                }
+                            )
+                        ], style = {'marginLeft': '10%', 'marginRight': '10%'}),
+                    ]
+                )
 
             ])
 ])
